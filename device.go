@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -61,20 +62,21 @@ func (d *Device) connectTelnet() error {
 	d.stdout.Read(buf)
 
 
-	prompt, err := d.Exec("")
-	re := regexp.MustCompile(`\r?\n`)
-	d.prompt = re.ReplaceAllString(prompt, "")
+	d.prompt, err = d.Exec("")
 	if err != nil {
 		log.Println(err)
 	}
-	log.Println(d.prompt)
+	_, err = d.Exec("terminal length 0")
+
+	intBrief, err := d.Exec("sh ip int brief")
+	fmt.Println(intBrief)
 
 	return nil
 }
 
-func (d *Device) Exec(cmd string) (string, error) {
+func (d *Device) Exec(cmd ...string) (string, error) {
 	go d.reader()
-	_, err := io.WriteString(d.conn, "sh ip int brief\n")
+	_, err := io.WriteString(d.conn, fmt.Sprint(strings.Join(cmd, ""), "\n"))
 	if err != nil {
 		log.Println(err)
 	}
@@ -86,7 +88,15 @@ func (d *Device) Exec(cmd string) (string, error) {
 				continue
 			}
 
-			return *output, nil
+			NLStart := regexp.MustCompile(`^\r?\n`)
+			NLEnd := regexp.MustCompile(`\r?\n$`)
+			outputFormat := NLStart.ReplaceAllString(*output, "")
+			outputFormat = strings.Replace(outputFormat, strings.Join(cmd, ""), "", -1)
+			outputFormat = NLStart.ReplaceAllString(outputFormat, "")
+			outputFormat = strings.Replace(outputFormat, d.prompt, "", -1)
+			outputFormat = NLEnd.ReplaceAllString(outputFormat, "")
+
+			return outputFormat, nil
 		case <-time.After(time.Second * time.Duration(30)):
 			d.Close()
 			return "", fmt.Errorf("timeout on %s", d.Ip)
@@ -117,10 +127,4 @@ func (d *Device) reader() {
 
 func (d Device) Close() {
 	d.conn.Close()
-}
-
-func cmd() {}
-
-func NewDeviceSSH() {
-
 }
