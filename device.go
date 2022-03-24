@@ -27,6 +27,10 @@ type Device struct {
 	prompt string
 }
 
+var (
+	ErrUnknownCommand = errors.New("unkown command")
+)
+
 func (d *Device) Open() error {
 	switch d.ConnType {
 	case "telnet":
@@ -69,6 +73,9 @@ func (d *Device) connectTelnet() error {
 	_, err = d.Exec("terminal length 0")
 
 	intBrief, err := d.Exec("sh ip int brief")
+	if err != nil {
+		log.Println(err)
+	}
 	fmt.Println(intBrief)
 
 	return nil
@@ -95,6 +102,10 @@ func (d *Device) Exec(cmd ...string) (string, error) {
 			outputFormat = NLStart.ReplaceAllString(outputFormat, "")
 			outputFormat = strings.Replace(outputFormat, d.prompt, "", -1)
 			outputFormat = NLEnd.ReplaceAllString(outputFormat, "")
+
+			if strings.Contains(outputFormat, "Unknown command") || strings.Contains(outputFormat, "Invalid input") {
+				return "", ErrUnknownCommand
+			}
 
 			return outputFormat, nil
 		case <-time.After(time.Second * time.Duration(30)):
