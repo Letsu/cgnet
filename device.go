@@ -28,7 +28,8 @@ type Device struct {
 }
 
 var (
-	ErrUnknownCommand = errors.New("unkown command")
+	ErrUnknownCommand = errors.New("unknown or invalid command")
+	RegPrompt = regexp.MustCompile("[A-Za-z0-9-_()]+\\#")
 )
 
 func (d *Device) Open() error {
@@ -63,20 +64,18 @@ func (d *Device) connectTelnet() error {
 	d.readChan = make(chan *string, 20)
 
 	buf := make([]byte, 10000)
-	d.stdout.Read(buf)
-
+	start := false
+	for start {
+		n, _ := d.stdout.Read(buf)
+		start, _ = regexp.MatchString(RegPrompt.String(), string(buf[:n]))
+	}
 
 	d.prompt, err = d.Exec("")
 	if err != nil {
 		log.Println(err)
+		return err
 	}
-	_, err = d.Exec("terminal length 0")
-
-	intBrief, err := d.Exec("sh ip int brief")
-	if err != nil {
-		log.Println(err)
-	}
-	fmt.Println(intBrief)
+	d.Exec("terminal length 0")
 
 	return nil
 }
@@ -86,12 +85,11 @@ func (d *Device) Exec2(cmd ...string) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
 func (d *Device) Exec(cmd ...string) (string, error) {
-	go d.reader()
+	go d.reader(cmd...)
 	_, err := io.WriteString(d.conn, fmt.Sprint(strings.Join(cmd, ""), "\n"))
 	if err != nil {
 		log.Println(err)
@@ -109,7 +107,8 @@ func (d *Device) Exec(cmd ...string) (string, error) {
 			outputFormat := NLStart.ReplaceAllString(*output, "")
 			outputFormat = strings.Replace(outputFormat, strings.Join(cmd, ""), "", -1)
 			outputFormat = NLStart.ReplaceAllString(outputFormat, "")
-			outputFormat = strings.Replace(outputFormat, d.prompt, "", -1)
+			prompt := regexp.MustCompile("[A-Za-z0-9-_()]+\\#")
+			outputFormat = prompt.ReplaceAllString(outputFormat, "")
 			outputFormat = NLEnd.ReplaceAllString(outputFormat, "")
 
 			if strings.Contains(outputFormat, "Unknown command") || strings.Contains(outputFormat, "Invalid input") {
@@ -124,20 +123,17 @@ func (d *Device) Exec(cmd ...string) (string, error) {
 	}
 }
 
-func (d *Device) reader() {
+func (d *Device) reader(cmd ...string) {
 	buf := make([]byte, 10000)
 	output := ""
 
-	prompt := regexp.MustCompile("[A-Za-z0-9-_]+\\#")
+	prompt := regexp.MustCompile("[A-Za-z0-9-_()]+\\#")
 
 	for {
-		n, err := d.stdout.Read(buf)
-		if err != nil {
-			log.Println(err)
-		}
+		n, _ := d.stdout.Read(buf)
 
 		output += string(buf[:n])
-		if prompt.MatchString(output) {
+		if prompt.MatchString(output) && strings.Contains(output, strings.Join(cmd, "")) {
 			break
 		}
 	}
