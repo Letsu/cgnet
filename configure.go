@@ -1,7 +1,7 @@
 package goCisco
 
 import (
-	"fmt"
+	"errors"
 )
 
 func (d Device) Configure(cmds []string) error {
@@ -13,11 +13,13 @@ func (d Device) Configure(cmds []string) error {
 
 	err = nil
 	for _, cmd := range cmds {
-		if d.Exec2(cmd) != nil {
-			err = fmt.Errorf("error on command %s. aborting, %s", cmd, err.Error())
+		err = d.Exec2(cmd)
+		if err != nil {
+			err = errors.New("error on command " + cmd + ". aborting, " + err.Error())
 			break
 		}
 	}
+	d.Exec2("end")
 	if err != nil {
 		return err
 	}
