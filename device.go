@@ -81,6 +81,15 @@ func (d *Device) connectTelnet() error {
 	return nil
 }
 
+func (d *Device) Exec2(cmd ...string) error {
+	_, err := d.Exec(cmd...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (d *Device) Exec(cmd ...string) (string, error) {
 	go d.reader()
 	_, err := io.WriteString(d.conn, fmt.Sprint(strings.Join(cmd, ""), "\n"))
