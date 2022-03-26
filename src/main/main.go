@@ -7,7 +7,7 @@ import (
 
 func main() {
 	dev := goCisco.Device{
-		Ip:         "192.168.0.53",
+		Ip:         "192.168.0.39",
 		Username:   "",
 		Password:   "",
 		Enable:     "",
