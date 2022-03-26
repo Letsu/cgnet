@@ -29,7 +29,7 @@ type Device struct {
 
 var (
 	ErrUnknownCommand = errors.New("unknown or invalid command")
-	RegPrompt = regexp.MustCompile("[A-Za-z0-9-_()]+\\#")
+	RegPrompt = regexp.MustCompile("[[:alnum:]]+\\#")
 )
 
 func (d *Device) Open() error {
