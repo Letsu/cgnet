@@ -13,23 +13,22 @@ import (
 )
 
 type Device struct {
-	Ip string
-	Port string
-	Username string
-	Password string
-	Enable string
+	Ip         string
+	Port       string
+	Username   string
+	Password   string
+	Enable     string
 	DeviceType string
-	ConnType string
-	conn net.Conn
-	stdin io.Writer
-	stdout io.Reader
-	readChan chan *string
-	prompt string
+	ConnType   string
+	conn       net.Conn
+	stdin      io.Writer
+	stdout     io.Reader
+	readChan   chan *string
+	prompt     string
 }
 
 var (
 	ErrUnknownCommand = errors.New("unknown or invalid command")
-	RegPrompt = regexp.MustCompile("[[:alnum:]]+\\#")
 )
 
 func (d *Device) Open() error {
@@ -46,8 +45,11 @@ func (d *Device) Open() error {
 		return errors.New("undefined connection type")
 	}
 
-
 	return nil
+}
+
+func (d *Device) getPrompt() *regexp.Regexp {
+	return regexp.MustCompile(d.prompt + "[[:alnum:]]*[\\#>]")
 }
 
 func (d *Device) connectTelnet() error {
@@ -55,7 +57,7 @@ func (d *Device) connectTelnet() error {
 	if d.Port == "" {
 		d.Port = "23"
 	}
-	d.conn, err = net.Dial("tcp", d.Ip + ":" + d.Port)
+	d.conn, err = net.Dial("tcp", d.Ip+":"+d.Port)
 	if err != nil {
 		return err
 	}
@@ -64,13 +66,14 @@ func (d *Device) connectTelnet() error {
 	d.readChan = make(chan *string, 20)
 
 	buf := make([]byte, 10000)
-	start := false
-	for start {
+	d.prompt = ""
+	for d.prompt == "" {
 		n, _ := d.stdout.Read(buf)
-		start, _ = regexp.MatchString(RegPrompt.String(), string(buf[:n]))
+		prompt := regexp.MustCompile(d.getPrompt().String())
+		d.prompt = prompt.FindString(string(buf[:n]))
 	}
-
-	d.prompt, err = d.Exec("")
+	d.prompt = strings.Replace(d.prompt, ">", "", -1)
+	d.prompt = strings.Replace(d.prompt, "#", "", -1)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -105,10 +108,9 @@ func (d *Device) Exec(cmd ...string) (string, error) {
 			NLStart := regexp.MustCompile(`^\r?\n`)
 			NLEnd := regexp.MustCompile(`\r?\n$`)
 			outputFormat := NLStart.ReplaceAllString(*output, "")
-			outputFormat = strings.Replace(outputFormat, strings.Join(cmd, ""), "", -1)
 			outputFormat = NLStart.ReplaceAllString(outputFormat, "")
-			prompt := regexp.MustCompile("[A-Za-z0-9-_()]+\\#")
-			outputFormat = prompt.ReplaceAllString(outputFormat, "")
+			log.Println(d.getPrompt().String())
+			outputFormat = d.getPrompt().ReplaceAllString(outputFormat, "")
 			outputFormat = NLEnd.ReplaceAllString(outputFormat, "")
 
 			if strings.Contains(outputFormat, "Unknown command") || strings.Contains(outputFormat, "Invalid input") {
@@ -134,6 +136,7 @@ func (d *Device) reader(cmd ...string) {
 
 		output += string(buf[:n])
 		if prompt.MatchString(output) && strings.Contains(output, strings.Join(cmd, "")) {
+			output = strings.Replace(output, strings.Join(cmd, ""), "", -1)
 			break
 		}
 	}
