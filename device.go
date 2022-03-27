@@ -109,7 +109,6 @@ func (d *Device) Exec(cmd ...string) (string, error) {
 			NLEnd := regexp.MustCompile(`\r?\n$`)
 			outputFormat := NLStart.ReplaceAllString(*output, "")
 			outputFormat = NLStart.ReplaceAllString(outputFormat, "")
-			log.Println(d.getPrompt().String())
 			outputFormat = d.getPrompt().ReplaceAllString(outputFormat, "")
 			outputFormat = NLEnd.ReplaceAllString(outputFormat, "")
 
@@ -129,13 +128,11 @@ func (d *Device) reader(cmd ...string) {
 	buf := make([]byte, 10000)
 	output := ""
 
-	prompt := regexp.MustCompile("[A-Za-z0-9-_()]+\\#")
-
 	for {
 		n, _ := d.stdout.Read(buf)
 
 		output += string(buf[:n])
-		if prompt.MatchString(output) && strings.Contains(output, strings.Join(cmd, "")) {
+		if d.getPrompt().MatchString(output) && strings.Contains(output, strings.Join(cmd, "")) {
 			output = strings.Replace(output, strings.Join(cmd, ""), "", -1)
 			break
 		}
@@ -144,6 +141,7 @@ func (d *Device) reader(cmd ...string) {
 	d.readChan <- &output
 }
 
-func (d Device) Close() {
-	d.conn.Close()
+func (d Device) Close() error {
+	close(d.readChan)
+	return d.conn.Close()
 }
