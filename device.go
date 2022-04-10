@@ -1,7 +1,6 @@
 package goCisco
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -40,6 +39,10 @@ func (d *Device) Open() error {
 		}
 		break
 	case "ssh":
+		err := d.connectSSH()
+		if err != nil {
+			return err
+		}
 		break
 	default:
 		return errors.New("undefined connection type")
@@ -50,29 +53,6 @@ func (d *Device) Open() error {
 
 func (d *Device) getPrompt() *regexp.Regexp {
 	return regexp.MustCompile(d.prompt + "[[:alnum:]]*[\\#>]")
-}
-
-func (d *Device) connectTelnet() error {
-	var err error
-	if d.Port == "" {
-		d.Port = "23"
-	}
-	d.conn, err = net.Dial("tcp", d.Ip+":"+d.Port)
-	if err != nil {
-		return err
-	}
-	d.stdout = bufio.NewReader(d.conn)
-	d.stdin = bufio.NewWriter(d.conn)
-	d.readChan = make(chan *string, 20)
-
-	err = d.login()
-	if err != nil {
-		return err
-	}
-
-	d.Exec("terminal length 0")
-
-	return nil
 }
 
 func (d *Device) Exec2(cmd ...string) error {
