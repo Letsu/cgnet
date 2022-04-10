@@ -69,8 +69,7 @@ func (d *Device) connectTelnet() error {
 	d.prompt = ""
 	for d.prompt == "" {
 		n, _ := d.stdout.Read(buf)
-		prompt := regexp.MustCompile(d.getPrompt().String())
-		d.prompt = prompt.FindString(string(buf[:n]))
+		d.prompt = d.getPrompt().FindString(string(buf[:n]))
 	}
 	d.prompt = strings.Replace(d.prompt, ">", "", -1)
 	d.prompt = strings.Replace(d.prompt, "#", "", -1)
@@ -117,9 +116,8 @@ func (d *Device) Exec(cmd ...string) (string, error) {
 			}
 
 			return outputFormat, nil
-		case <-time.After(time.Second * time.Duration(30)):
-			d.Close()
-			return "", fmt.Errorf("timeout on %s", d.Ip)
+		case <-time.After(time.Second * time.Duration(5)):
+			return "", fmt.Errorf("no return on %s on command %s", d.Ip, cmd)
 		}
 	}
 }
