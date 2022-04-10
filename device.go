@@ -65,18 +65,11 @@ func (d *Device) connectTelnet() error {
 	d.stdin = bufio.NewWriter(d.conn)
 	d.readChan = make(chan *string, 20)
 
-	buf := make([]byte, 10000)
-	d.prompt = ""
-	for d.prompt == "" {
-		n, _ := d.stdout.Read(buf)
-		d.prompt = d.getPrompt().FindString(string(buf[:n]))
-	}
-	d.prompt = strings.Replace(d.prompt, ">", "", -1)
-	d.prompt = strings.Replace(d.prompt, "#", "", -1)
+	err = d.login()
 	if err != nil {
-		log.Println(err)
 		return err
 	}
+
 	d.Exec("terminal length 0")
 
 	return nil
@@ -87,6 +80,66 @@ func (d *Device) Exec2(cmd ...string) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (d *Device) login() error {
+	buf := make([]byte, 1000)
+	n, _ := d.stdout.Read(buf)
+	text := string(buf[:n])
+
+	var match bool
+	//Login @todo add timeout
+	for !match {
+
+		switch {
+		case strings.Contains(text, "sername:"):
+			io.WriteString(d.conn, d.Username+"\n")
+			break
+		case strings.Contains(text, "assword:"):
+			io.WriteString(d.conn, d.Password+"\n")
+			break
+		case strings.Contains(text, "timeout"):
+			return errors.New("timeout")
+		case strings.Contains(text, "Authentication failed"):
+			return errors.New("authentication failed")
+		default:
+			break
+		}
+		n, _ = d.stdout.Read(buf)
+		text = string(buf[:n])
+		match, _ = regexp.MatchString(d.getPrompt().String(), text)
+	}
+	d.prompt = d.getPrompt().FindString(text)
+
+	// Enable @todo add timeout
+	enabled := !strings.Contains(d.prompt, ">")
+	if d.Enable == "" {
+		enabled = true
+	}
+
+	if !enabled {
+		io.WriteString(d.conn, "enable\n")
+		n, _ = d.stdout.Read(buf)
+		text = string(buf[:n])
+	}
+	for !enabled {
+		switch {
+		case strings.Contains(text, "assword:"):
+			io.WriteString(d.conn, d.Enable+"\n")
+			break
+		default:
+			break
+		}
+
+		n, _ = d.stdout.Read(buf)
+		text = string(buf[:n])
+		enabled, _ = regexp.MatchString("[[:alnum:]]*[\\#]", text)
+	}
+
+	d.prompt = strings.Replace(d.prompt, ">", "", -1)
+	d.prompt = strings.Replace(d.prompt, "#", "", -1)
+
 	return nil
 }
 
@@ -117,7 +170,7 @@ func (d *Device) Exec(cmd ...string) (string, error) {
 
 			return outputFormat, nil
 		case <-time.After(time.Second * time.Duration(5)):
-			return "", fmt.Errorf("no return on %s on command %s", d.Ip, cmd)
+			return "", fmt.Errorf("no return of prompt on command")
 		}
 	}
 }
