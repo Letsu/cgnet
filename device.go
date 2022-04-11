@@ -1,4 +1,4 @@
-package goCisco
+package cgnet
 
 import (
 	"errors"
@@ -76,7 +76,7 @@ func (d *Device) login() error {
 
 	var match bool
 	match, _ = regexp.MatchString(d.getPrompt().String(), text)
-	//Login @todo add timeout
+	//Login
 	for !match {
 		switch {
 		case strings.Contains(text, "timeout"):
@@ -105,7 +105,7 @@ func (d *Device) login() error {
 	}
 	d.prompt = d.getPrompt().FindString(text)
 
-	// Enable @todo add timeout
+	// Enable
 	enabled := !strings.Contains(d.prompt, ">")
 	if d.Enable == "" {
 		enabled = true

@@ -1,4 +1,4 @@
-package goCisco
+package cgnet
 
 import (
 	"bufio"
