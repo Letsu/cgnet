@@ -34,18 +34,22 @@ var (
 	ErrAuthFailed     = errors.New("authentication failed")
 	ErrNoPrompt       = errors.New("no return of prompt after command")
 	ErrUnsupported    = errors.New("unsupported connection type")
+
+	//Connection types
+	Telnet = "telnet"
+	SSH    = "ssh"
 )
 
 // Open the connection to the device
 func (d *Device) Open() error {
 	switch d.ConnType {
-	case "telnet":
+	case Telnet:
 		err := d.connectTelnet()
 		if err != nil {
 			return err
 		}
 		break
-	case "ssh":
+	case SSH:
 		err := d.connectSSH()
 		if err != nil {
 			return err
