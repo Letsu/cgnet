@@ -9,7 +9,7 @@ Tested on various cisco catalyst switches, ASRs and ISRs others should also be p
 Installation
 ------------
 ``` sh
-go get github.com/letsu/cgnet
+go get github.com/Letsu/cgnet
 ```
 
 Example
@@ -20,7 +20,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/letsu/cgnet"
+	"github.com/Letsu/cgnet"
 )
 
 func main() {
