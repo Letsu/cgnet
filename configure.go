@@ -4,6 +4,7 @@ import (
 	"errors"
 )
 
+// Configure a silce of commands on the device. The commands executed automatically in the 'configure terminal' mode.
 func (d Device) Configure(cmds []string) error {
 
 	err := d.Exec2("conf t")

@@ -33,6 +33,7 @@ var (
 	ErrUnknownCommand = errors.New("unknown or invalid command")
 )
 
+// Open the connection to the device
 func (d *Device) Open() error {
 	switch d.ConnType {
 	case "telnet":
@@ -61,6 +62,7 @@ func (d *Device) getPrompt() *regexp.Regexp {
 	return regexp.MustCompile(d.prompt + "[[:alnum:]-_]*[\\#>]")
 }
 
+// Exec2 executes a command on the device and without returning the output
 func (d *Device) Exec2(cmd ...string) error {
 	_, err := d.Exec(cmd...)
 	if err != nil {
@@ -142,6 +144,7 @@ func (d *Device) login() error {
 	return nil
 }
 
+// Exec executes a command on the device and returns the output
 func (d *Device) Exec(cmd ...string) (string, error) {
 	go d.reader(cmd...)
 	_, err := io.WriteString(d.stdin, fmt.Sprint(strings.Join(cmd, ""), "\n"))
@@ -191,6 +194,7 @@ func (d *Device) reader(cmd ...string) {
 	d.readChan <- &output
 }
 
+// Close the connection to the device
 func (d Device) Close() error {
 	close(d.readChan)
 	if d.ConnType == "telnet" {
