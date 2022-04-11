@@ -30,7 +30,7 @@ func main() {
 		Username: "cisco",
 		Password: "cisco",
 		Enable:   "cisco",
-		ConnType: "ssh",
+		ConnType: cgnet.SSH,
 	}
 
 	err := d.Open()
