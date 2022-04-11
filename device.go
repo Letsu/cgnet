@@ -3,6 +3,7 @@ package goCisco
 import (
 	"errors"
 	"fmt"
+	"golang.org/x/crypto/ssh"
 	"io"
 	"log"
 	"net"
@@ -12,18 +13,20 @@ import (
 )
 
 type Device struct {
-	Ip         string
-	Port       string
-	Username   string
-	Password   string
-	Enable     string
-	DeviceType string
-	ConnType   string
-	conn       net.Conn
-	stdin      io.Writer
-	stdout     io.Reader
-	readChan   chan *string
-	prompt     string
+	Ip           string
+	Port         string
+	Username     string
+	Password     string
+	Enable       string
+	DeviceType   string
+	ConnType     string
+	telnetClient net.Conn
+	sshClient    *ssh.Client
+	sshSession   *ssh.Session
+	stdin        io.Writer
+	stdout       io.Reader
+	readChan     chan *string
+	prompt       string
 }
 
 var (
@@ -52,6 +55,9 @@ func (d *Device) Open() error {
 }
 
 func (d *Device) getPrompt() *regexp.Regexp {
+	if len(d.prompt) > 10 {
+		d.prompt = d.prompt[:10]
+	}
 	return regexp.MustCompile(d.prompt + "[[:alnum:]]*[\\#>]")
 }
 
@@ -69,18 +75,25 @@ func (d *Device) login() error {
 	text := string(buf[:n])
 
 	var match bool
+	match, _ = regexp.MatchString(d.getPrompt().String(), text)
 	//Login @todo add timeout
 	for !match {
-
 		switch {
-		case strings.Contains(text, "sername:"):
-			io.WriteString(d.conn, d.Username+"\n")
-			break
-		case strings.Contains(text, "assword:"):
-			io.WriteString(d.conn, d.Password+"\n")
-			break
 		case strings.Contains(text, "timeout"):
 			return errors.New("timeout")
+		case strings.Contains(text, "sername:"):
+			_, err := io.WriteString(d.stdin, d.Username+"\n")
+			if err != nil {
+				return err
+			}
+			break
+		case strings.Contains(text, "assword:"):
+			_, err := io.WriteString(d.stdin, d.Password+"\n")
+			if err != nil {
+				return err
+			}
+			break
+
 		case strings.Contains(text, "Authentication failed"):
 			return errors.New("authentication failed")
 		default:
@@ -99,14 +112,20 @@ func (d *Device) login() error {
 	}
 
 	if !enabled {
-		io.WriteString(d.conn, "enable\n")
+		_, err := io.WriteString(d.stdin, "enable\n")
+		if err != nil {
+			return err
+		}
 		n, _ = d.stdout.Read(buf)
 		text = string(buf[:n])
 	}
 	for !enabled {
 		switch {
 		case strings.Contains(text, "assword:"):
-			io.WriteString(d.conn, d.Enable+"\n")
+			_, err := io.WriteString(d.stdin, d.Enable+"\n")
+			if err != nil {
+				return err
+			}
 			break
 		default:
 			break
@@ -125,7 +144,7 @@ func (d *Device) login() error {
 
 func (d *Device) Exec(cmd ...string) (string, error) {
 	go d.reader(cmd...)
-	_, err := io.WriteString(d.conn, fmt.Sprint(strings.Join(cmd, ""), "\n"))
+	_, err := io.WriteString(d.stdin, fmt.Sprint(strings.Join(cmd, ""), "\n"))
 	if err != nil {
 		log.Println(err)
 	}
@@ -174,5 +193,12 @@ func (d *Device) reader(cmd ...string) {
 
 func (d Device) Close() error {
 	close(d.readChan)
-	return d.conn.Close()
+	if d.ConnType == "telnet" {
+		return d.telnetClient.Close()
+	} else if d.ConnType == "ssh" {
+		d.sshSession.Close()
+		return d.sshClient.Close()
+	}
+
+	return nil
 }

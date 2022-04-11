@@ -10,12 +10,12 @@ func (d *Device) connectTelnet() error {
 	if d.Port == "" {
 		d.Port = "23"
 	}
-	d.conn, err = net.Dial("tcp", d.Ip+":"+d.Port)
+	d.telnetClient, err = net.Dial("tcp", d.Ip+":"+d.Port)
 	if err != nil {
 		return err
 	}
-	d.stdout = bufio.NewReader(d.conn)
-	d.stdin = bufio.NewWriter(d.conn)
+	d.stdout = bufio.NewReader(d.telnetClient)
+	d.stdin = d.telnetClient
 	d.readChan = make(chan *string, 20)
 
 	err = d.login()
