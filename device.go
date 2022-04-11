@@ -58,7 +58,7 @@ func (d *Device) getPrompt() *regexp.Regexp {
 	if len(d.prompt) > 10 {
 		d.prompt = d.prompt[:10]
 	}
-	return regexp.MustCompile(d.prompt + "[[:alnum:]]*[\\#>]")
+	return regexp.MustCompile(d.prompt + "[[:alnum:]-_]*[\\#>]")
 }
 
 func (d *Device) Exec2(cmd ...string) error {
@@ -133,7 +133,7 @@ func (d *Device) login() error {
 
 		n, _ = d.stdout.Read(buf)
 		text = string(buf[:n])
-		enabled, _ = regexp.MatchString("[[:alnum:]]*[\\#]", text)
+		enabled, _ = regexp.MatchString("[[:alnum:]-_]*[\\#]", text)
 	}
 
 	d.prompt = strings.Replace(d.prompt, ">", "", -1)
