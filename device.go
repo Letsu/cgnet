@@ -31,6 +31,9 @@ type Device struct {
 
 var (
 	ErrUnknownCommand = errors.New("unknown or invalid command")
+	ErrAuthFailed     = errors.New("authentication failed")
+	ErrNoPrompt       = errors.New("no return of prompt after command")
+	ErrUnsupported    = errors.New("unsupported connection type")
 )
 
 // Open the connection to the device
@@ -49,7 +52,7 @@ func (d *Device) Open() error {
 		}
 		break
 	default:
-		return errors.New("undefined connection type")
+		return ErrUnsupported
 	}
 
 	return nil
@@ -97,7 +100,7 @@ func (d *Device) login() error {
 			break
 
 		case strings.Contains(text, "Authentication failed"):
-			return errors.New("authentication failed")
+			return ErrAuthFailed
 		default:
 			break
 		}
@@ -172,7 +175,7 @@ func (d *Device) Exec(cmd ...string) (string, error) {
 
 			return outputFormat, nil
 		case <-time.After(time.Second * time.Duration(5)):
-			return "", fmt.Errorf("no return of prompt on command")
+			return "", ErrNoPrompt
 		}
 	}
 }
