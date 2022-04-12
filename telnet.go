@@ -3,6 +3,7 @@ package cgnet
 import (
 	"bufio"
 	"net"
+	"time"
 )
 
 func (d *Device) connectTelnet() error {
@@ -10,7 +11,7 @@ func (d *Device) connectTelnet() error {
 	if d.Port == "" {
 		d.Port = "23"
 	}
-	d.telnetClient, err = net.Dial("tcp", d.Ip+":"+d.Port)
+	d.telnetClient, err = net.DialTimeout("tcp", d.Ip+":"+d.Port, 10*time.Second)
 	if err != nil {
 		return err
 	}
