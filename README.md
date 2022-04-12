@@ -1,4 +1,4 @@
-[![Go Reference](https://pkg.go.dev/badge/github.com/Letsu/cgnet.svg)](https://pkg.go.dev/github.com/Letsu/cgnet)
+[![Go Reference](https://pkg.go.dev/badge/github.com/Letsu/cgnet.svg)](https://pkg.go.dev/github.com/Letsu/cgnet)[![Go Report Card](https://goreportcard.com/badge/github.com/Letsu/cgnet)](https://goreportcard.com/report/github.com/Letsu/cgnet)
 # CG - NET
 
 CG-Net is a simple netmiko like package for go to manage cisco devices.
