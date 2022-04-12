@@ -5,7 +5,7 @@ CG-Net is a simple netmiko like package for go to manage cisco devices.
 
 Currently, It's possible to connect to devices using telnet and ssh. 
 
-Tested on various cisco catalyst switches, ASRs and ISRs others should also be possible (:
+Tested on various cisco catalyst switches, ASRs and ISRs. Other devices should also be possible (:
 
 Installation
 ------------
