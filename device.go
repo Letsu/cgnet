@@ -202,7 +202,7 @@ func (d *Device) reader(cmd ...string) {
 		}
 
 		if ShowLog {
-			fmt.Println(buf[:n])
+			fmt.Println(string(buf[:n]))
 		}
 	}
 
