@@ -35,7 +35,10 @@ var (
 	ErrNoPrompt       = errors.New("no return of prompt after command")
 	ErrUnsupported    = errors.New("unsupported connection type")
 
-	//Connection types
+	// Timeout for waiting for a prompt
+	Timeout = time.Second * 5
+
+	// Connection types
 	Telnet = "telnet"
 	SSH    = "ssh"
 )
@@ -178,7 +181,7 @@ func (d *Device) Exec(cmd ...string) (string, error) {
 			}
 
 			return outputFormat, nil
-		case <-time.After(time.Second * time.Duration(5)):
+		case <-time.After(Timeout):
 			return "", ErrNoPrompt
 		}
 	}
