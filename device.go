@@ -37,6 +37,8 @@ var (
 
 	// Timeout for waiting for a prompt
 	Timeout = time.Second * 5
+	// Log all to stdout of conso
+	ShowLog = false
 
 	// Connection types
 	Telnet = "telnet"
@@ -193,11 +195,14 @@ func (d *Device) reader(cmd ...string) {
 
 	for {
 		n, _ := d.stdout.Read(buf)
-
 		output += string(buf[:n])
 		if d.getPrompt().MatchString(output) && strings.Contains(output, strings.Join(cmd, "")) {
 			output = strings.Replace(output, strings.Join(cmd, ""), "", -1)
 			break
+		}
+
+		if ShowLog {
+			fmt.Println(buf[:n])
 		}
 	}
 
