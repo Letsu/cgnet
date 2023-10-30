@@ -71,7 +71,7 @@ func (d *Device) getPrompt() *regexp.Regexp {
 	if len(d.prompt) > 10 {
 		d.prompt = d.prompt[:10]
 	}
-	return regexp.MustCompile(d.prompt + "[[:alnum:]-_]*[\\#>]")
+	return regexp.MustCompile(d.prompt + "[[:alnum:]\\(\\)-_]*[\\#>]")
 }
 
 // Exec2 executes a command on the device and without returning the output
